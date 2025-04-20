@@ -31,11 +31,64 @@ from PIL import Image
 import base64
 from pathlib import Path
 
+# Sample products data
+SAMPLE_PRODUCTS = [
+    {
+        "id": "P001",
+        "name": "Haldiram's Bhujia",
+        "weight_kg": 1.0,
+        "price": 5.99,
+        "description": "Popular Indian snack"
+    },
+    {
+        "id": "P002",
+        "name": "Maggi Noodles",
+        "weight_kg": 0.5,
+        "price": 3.99,
+        "description": "Instant noodles"
+    },
+    {
+        "id": "P003",
+        "name": "Tata Tea Premium",
+        "weight_kg": 0.25,
+        "price": 4.99,
+        "description": "Premium Indian tea"
+    },
+    {
+        "id": "P004",
+        "name": "MTR Sambar Powder",
+        "weight_kg": 0.2,
+        "price": 6.99,
+        "description": "Authentic sambar mix"
+    }
+]
+
+def add_to_cart(product_id, quantity):
+    """Add a product to the cart with the specified quantity."""
+    product = next((p for p in SAMPLE_PRODUCTS if p['id'] == product_id), None)
+    if product:
+        cart_item = {
+            'product_id': product['id'],
+            'name': product['name'],
+            'quantity': quantity,
+            'price': product['price'],
+            'weight_kg': product['weight_kg']
+        }
+        if 'cart' not in st.session_state:
+            st.session_state.cart = []
+        st.session_state.cart.append(cart_item)
+
+def remove_from_cart(index):
+    """Remove an item from the cart at the specified index."""
+    if 'cart' in st.session_state and 0 <= index < len(st.session_state.cart):
+        st.session_state.cart.pop(index)
+
 # Page configuration must be the first Streamlit command
 st.set_page_config(
     page_title="CrowdCargo",
     page_icon="📦",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"  # Hide the sidebar by default
 )
 
 # Add loading spinner function
@@ -64,6 +117,57 @@ def get_image_base64(image_path):
 # Add custom CSS for better styling
 st.markdown("""
 <style>
+    /* Main container styling */
+    .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    /* Navigation bar styling */
+    .nav-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: white;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 800px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .nav-item {
+        margin: 0 15px;
+        padding: 8px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #2c3e50;
+        font-weight: 500;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+    
+    .nav-item:hover {
+        background-color: #f0f2f6;
+        transform: translateY(-2px);
+        border-color: #4CAF50;
+    }
+    
+    .nav-item.active {
+        background-color: #4CAF50;
+        color: white;
+        border-color: #4CAF50;
+    }
+    
+    /* Welcome message styling */
+    .welcome-message {
+        text-align: center;
+        margin: 40px 0;
+        color: #2c3e50;
+    }
+    
     .stButton>button {
         width: 100%;
         border-radius: 5px;
@@ -256,6 +360,75 @@ st.markdown("""
         font-size: 0.8em;
         color: #666;
     }
+    .logout-icon {
+        font-size: 24px;
+        color: #2c3e50;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        background: none;
+        border: none;
+        display: inline-block;
+        position: relative;
+        top: 10px;
+    }
+    .logout-icon:hover {
+        color: #ff4b4b;
+        transform: scale(1.1);
+    }
+    .stButton > button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .stButton > button:hover {
+        background-color: #45a049;
+    }
+    /* Specific style for logout button */
+    [data-testid="stButton"] button[aria-label=""] {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+    [data-testid="stButton"] button[aria-label=""]:hover {
+        background: none;
+    }
+    /* Style for navigation buttons */
+    .stButton > button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .stButton > button:hover {
+        background-color: #45a049;
+    }
+    /* Special style for logout button */
+    [data-testid="stButton"] button[key="nav_logout"] {
+        background-color: transparent;
+        color: #2c3e50;
+        border: 1px solid #2c3e50;
+        transition: all 0.3s ease;
+    }
+    [data-testid="stButton"] button[key="nav_logout"]:hover {
+        background-color: rgba(44, 62, 80, 0.1);
+        color: #ff4b4b;
+        border-color: #ff4b4b;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -350,6 +523,66 @@ SHIPPING_TRUCKS = [
     }
 ]
 
+# Add this after the SHIPPING_TRUCKS definition and before MongoDB connection
+SAMPLE_PRODUCTS = [
+    {
+        "id": "P001",
+        "name": "Haldiram's Bhujia",
+        "weight_kg": 1.0,
+        "price": 5.99,
+        "description": "Popular Indian snack"
+    },
+    {
+        "id": "P002",
+        "name": "Maggi Noodles",
+        "weight_kg": 0.5,
+        "price": 3.99,
+        "description": "Instant noodles"
+    },
+    {
+        "id": "P003",
+        "name": "Tata Tea Premium",
+        "weight_kg": 0.25,
+        "price": 4.99,
+        "description": "Premium Indian tea"
+    },
+    {
+        "id": "P004",
+        "name": "MTR Sambar Powder",
+        "weight_kg": 0.2,
+        "price": 6.99,
+        "description": "Authentic sambar mix"
+    },
+    {
+        "id": "P005",
+        "name": "Amul Ghee",
+        "weight_kg": 1.0,
+        "price": 12.99,
+        "description": "Pure cow ghee"
+    },
+    {
+        "id": "P006",
+        "name": "Britannia Good Day",
+        "weight_kg": 0.3,
+        "price": 2.99,
+        "description": "Butter cookies"
+    },
+    {
+        "id": "P007",
+        "name": "MDH Garam Masala",
+        "weight_kg": 0.1,
+        "price": 3.99,
+        "description": "Mixed Indian spices"
+    },
+    {
+        "id": "P008",
+        "name": "Lijjat Papad",
+        "weight_kg": 0.2,
+        "price": 4.99,
+        "description": "Crispy Indian papad"
+    }
+]
+
 # MongoDB connection
 @st.cache_resource
 def init_mongodb():
@@ -423,307 +656,196 @@ def verify_token(token):
     except:
         return None
 
+# Add validation functions
+def validate_email(email):
+    """Validate email format using regex"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+def validate_password(password):
+    """Validate password strength"""
+    if len(password) < 8:
+        return False
+    if not re.search(r'[A-Z]', password):  # Check for uppercase
+        return False
+    if not re.search(r'[a-z]', password):  # Check for lowercase
+        return False
+    if not re.search(r'\d', password):     # Check for digit
+        return False
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):  # Check for special char
+        return False
+    return True
+
 # Initialize session state
 if 'user' not in st.session_state:
     st.session_state.user = None
 if 'token' not in st.session_state:
     st.session_state.token = None
+if 'page' not in st.session_state:
+    st.session_state.page = "Home"
+if 'cart' not in st.session_state:
+    st.session_state.cart = []
+if 'selected_truck' not in st.session_state:
+    st.session_state.selected_truck = None
 
-# Security functions
-def generate_secure_password(length=12):
-    alphabet = string.ascii_letters + string.digits + string.punctuation
-    while True:
-        password = ''.join(secrets.choice(alphabet) for _ in range(length))
-        if (any(c.islower() for c in password)
-                and any(c.isupper() for c in password)
-                and any(c.isdigit() for c in password)
-                and any(c in string.punctuation for c in password)):
-            return password
-
-def validate_email(email: str) -> bool:
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, email))
-
-def validate_password(password: str) -> bool:
-    if len(password) < 8:
-        return False
-    if not re.search(r'[A-Z]', password):
-        return False
-    if not re.search(r'[a-z]', password):
-        return False
-    if not re.search(r'\d', password):
-        return False
-    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-        return False
-    return True
-
-# Email functions
-def send_email(to_email: str, subject: str, body: str) -> bool:
-    try:
-        # Create message
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_USERNAME
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        
-        # Attach the HTML body
-        msg.attach(MIMEText(body, 'html'))
-        
-        # Debug information
-        st.write("Attempting to send email...")
-        st.write(f"Server: {SMTP_SERVER}:{SMTP_PORT}")
-        st.write(f"Username: {SMTP_USERNAME}")
-        
-        # Create SMTP connection with timeout
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.set_debuglevel(1)  # Enable debug output
-            server.starttls()  # Enable TLS
-            
-            try:
-                server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                st.success("Successfully authenticated with SMTP server")
-            except Exception as auth_error:
-                st.error(f"SMTP Authentication failed: {str(auth_error)}")
-                return False
-            
-            try:
-                server.send_message(msg)
-                st.success(f"Email sent successfully to {to_email}")
-                return True
-            except Exception as send_error:
-                st.error(f"Failed to send email: {str(send_error)}")
-                return False
-                
-    except Exception as e:
-        st.error(f"Email sending failed: {str(e)}")
-        return False
-
-def send_order_confirmation(order: Order, user_email: str):
-    subject = f"Order Confirmation - {order.order_id}"
-    body = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2 style="color: #2c3e50;">Thank you for your order!</h2>
-            <p>Your order has been received and is being processed.</p>
-            
-            <h3 style="color: #2c3e50;">Order Details:</h3>
-            <p><strong>Order ID:</strong> {order.order_id}</p>
-            <p><strong>Status:</strong> {order.status.title()}</p>
-            <p><strong>Total Weight:</strong> {format_weight(order.total_weight_kg)}</p>
-            <p><strong>Total Price:</strong> {format_currency(order.total_price)}</p>
-            
-            <h3 style="color: #2c3e50;">Items:</h3>
-            <ul>
-                {''.join(f'<li>{item.name} - {item.quantity} x {format_currency(item.price)}</li>' for item in order.items)}
-            </ul>
-            
-            <p>You can track your order status at any time through your account.</p>
-            
-            <p style="margin-top: 20px; color: #7f8c8d;">
-                Best regards,<br>
-                CrowdCargo Team
-            </p>
-        </body>
-    </html>
-    """
-    send_email(user_email, subject, body)
-
-def send_status_update(order: Order, user_email: str):
-    subject = f"Order Status Update - {order.order_id}"
-    body = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2 style="color: #2c3e50;">Your order status has been updated</h2>
-            <p><strong>Order ID:</strong> {order.order_id}</p>
-            <p><strong>New Status:</strong> {order.status.title()}</p>
-            <p>You can track your order status at any time through your account.</p>
-            
-            <p style="margin-top: 20px; color: #7f8c8d;">
-                Best regards,<br>
-                CrowdCargo Team
-            </p>
-        </body>
-    </html>
-    """
-    send_email(user_email, subject, body)
-
-# Authentication UI
-def show_auth_ui():
-    st.sidebar.title("Authentication")
-    auth_type = st.sidebar.radio("Choose", ["Login", "Register", "Forgot Password"])
+# Show authentication UI if not logged in
+if not st.session_state.user:
+    st.markdown("""
+    <div style='text-align: center; margin: 40px 0;'>
+        <h2 style='color: #2c3e50;'>Welcome to CrowdCargo</h2>
+        <p style='color: #666;'>Your Community Shipping Platform</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    if auth_type == "Login":
-        email = st.sidebar.text_input("Email")
-        password = st.sidebar.text_input("Password", type="password")
+    # Create tabs for Login and Register
+    tab1, tab2 = st.tabs(["Login", "Register"])
+    
+    with tab1:
+        st.markdown("### Login to Your Account")
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_password")
         
-        if st.sidebar.button("Login"):
+        if st.button("Login", key="login_button"):
             if not validate_email(email):
-                st.sidebar.error("Invalid email format")
-                return
-            
-            user = users_collection.find_one({"email": email})
-            if user and verify_password(password, user['password']):
-                st.session_state.user = user
-                st.session_state.token = create_token(str(user['_id']))
-                st.sidebar.success("Logged in successfully!")
-                st.rerun()
+                st.error("Invalid email format")
             else:
-                st.sidebar.error("Invalid credentials")
+                user = users_collection.find_one({"email": email})
+                if user and verify_password(password, user['password']):
+                    st.session_state.user = user
+                    st.session_state.token = create_token(str(user['_id']))
+                    st.success("Logged in successfully!")
+                    st.rerun()
+                else:
+                    st.error("Invalid credentials")
     
-    elif auth_type == "Register":
-        name = st.sidebar.text_input("Full Name")
-        email = st.sidebar.text_input("Email")
-        password = st.sidebar.text_input("Password", type="password")
-        confirm_password = st.sidebar.text_input("Confirm Password", type="password")
+    with tab2:
+        st.markdown("### Create New Account")
+        name = st.text_input("Full Name", key="register_name")
+        email = st.text_input("Email", key="register_email")
+        password = st.text_input("Password", type="password", key="register_password")
+        confirm_password = st.text_input("Confirm Password", type="password", key="register_confirm_password")
         
-        if st.sidebar.button("Register"):
+        if st.button("Register", key="register_button"):
             if not validate_email(email):
-                st.sidebar.error("Invalid email format")
-                return
-            if not validate_password(password):
-                st.sidebar.error("Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters")
-                return
-            if password != confirm_password:
-                st.sidebar.error("Passwords do not match")
-                return
-            if users_collection.find_one({"email": email}):
-                st.sidebar.error("Email already registered")
-                return
-            
-            hashed_password = hash_password(password)
-            user = {
-                "name": name,
-                "email": email,
-                "password": hashed_password,
-                "role": "user",
-                "created_at": datetime.now(),
-                "email_verified": False,
-                "verification_token": secrets.token_urlsafe(32)
-            }
-            users_collection.insert_one(user)
-            
-            # Send verification email
-            verification_link = f"{os.getenv('APP_URL', 'http://localhost:8501')}/verify?token={user['verification_token']}"
-            send_email(
-                email,
-                "Verify your CrowdCargo account",
-                f"""
-                <html>
-                    <body>
-                        <h2>Welcome to CrowdCargo!</h2>
-                        <p>Please verify your email address by clicking the link below:</p>
-                        <p><a href="{verification_link}">Verify Email</a></p>
-                        <p>If you did not create an account, please ignore this email.</p>
-                    </body>
-                </html>
-                """
-            )
-            st.sidebar.success("Registration successful! Please check your email to verify your account.")
-    
-    else:  # Forgot Password
-        email = st.sidebar.text_input("Email")
-        if st.sidebar.button("Reset Password"):
-            if not validate_email(email):
-                st.sidebar.error("Invalid email format")
-                return
-            
-            user = users_collection.find_one({"email": email})
-            if user:
-                reset_token = secrets.token_urlsafe(32)
-                users_collection.update_one(
-                    {"email": email},
-                    {"$set": {"reset_token": reset_token, "reset_token_expiry": datetime.now() + timedelta(hours=1)}}
-                )
+                st.error("Invalid email format")
+            elif not validate_password(password):
+                st.error("Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters")
+            elif password != confirm_password:
+                st.error("Passwords do not match")
+            elif users_collection.find_one({"email": email}):
+                st.error("Email already registered")
+            else:
+                hashed_password = hash_password(password)
+                user = {
+                    "name": name,
+                    "email": email,
+                    "password": hashed_password,
+                    "role": "user",
+                    "created_at": datetime.now(),
+                    "email_verified": False,
+                    "verification_token": secrets.token_urlsafe(32)
+                }
+                users_collection.insert_one(user)
                 
-                reset_link = f"{os.getenv('APP_URL', 'http://localhost:8501')}/reset-password?token={reset_token}"
+                # Send verification email
+                verification_link = f"{os.getenv('APP_URL', 'http://localhost:8501')}/verify?token={user['verification_token']}"
                 send_email(
                     email,
-                    "Reset your CrowdCargo password",
+                    "Verify your CrowdCargo account",
                     f"""
                     <html>
                         <body>
-                            <h2>Password Reset Request</h2>
-                            <p>Click the link below to reset your password:</p>
-                            <p><a href="{reset_link}">Reset Password</a></p>
-                            <p>This link will expire in 1 hour.</p>
-                            <p>If you did not request a password reset, please ignore this email.</p>
+                            <h2>Welcome to CrowdCargo!</h2>
+                            <p>Please verify your email address by clicking the link below:</p>
+                            <p><a href="{verification_link}">Verify Email</a></p>
+                            <p>If you did not create an account, please ignore this email.</p>
                         </body>
                     </html>
                     """
                 )
-                st.sidebar.success("Password reset instructions have been sent to your email.")
-            else:
-                st.sidebar.error("Email not found")
-
-# Sample products (in a real app, this would come from a database)
-SAMPLE_PRODUCTS = [
-    {"id": "1", "name": "Haldiram's Bhujia", "weight_kg": 1.0, "price": 5.99},
-    {"id": "2", "name": "Lays Magic Masala", "weight_kg": 0.5, "price": 2.99},
-    {"id": "3", "name": "Parle-G Biscuits", "weight_kg": 0.3, "price": 1.99},
-    {"id": "4", "name": "Maggi Noodles", "weight_kg": 0.4, "price": 3.49},
-]
-
-# Initialize session state for cart if it doesn't exist
-if 'cart' not in st.session_state:
-    st.session_state.cart = []
-
-def add_to_cart(product_id, quantity):
-    product = next((p for p in SAMPLE_PRODUCTS if p["id"] == product_id), None)
-    if product:
-        st.session_state.cart.append({
-            "product_id": product["id"],
-            "name": product["name"],
-            "quantity": quantity,
-            "weight_kg": product["weight_kg"],
-            "price": product["price"]
-        })
-
-def remove_from_cart(index):
-    if 0 <= index < len(st.session_state.cart):
-        st.session_state.cart.pop(index)
-
-# Show authentication UI if not logged in
-if not st.session_state.user:
-    show_auth_ui()
+                st.success("Registration successful! Please check your email to verify your account.")
     st.stop()
 
-# Sidebar for navigation
-st.sidebar.title("Navigation")
-if st.session_state.user.get('role') == 'admin':
-    page = st.sidebar.radio(
-        "Go to",
-        ["Home", "Place Order", "My Cart", "Share Shipping", "Checkout", "Track Orders", "Shipping Status", "Admin Dashboard"]
-    )
-else:
-    page = st.sidebar.radio(
-        "Go to",
-        ["Home", "Place Order", "My Cart", "Share Shipping", "Checkout", "Track Orders", "Shipping Status"]
-    )
+# Main content for logged-in users
+col1, col2, col3 = st.columns([1, 6, 1])
+with col1:
+    if st.button("Logout", key="nav_logout"):
+        st.session_state.user = None
+        st.session_state.token = None
+        st.session_state.page = "Home"
+        st.success("Logged out successfully!")
+        st.rerun()
 
-# Update the cart counter in the top right
-if st.session_state.user:
-    total_weight = sum(item['weight_kg'] * item['quantity'] for item in st.session_state.cart)
-    st.markdown(f"""
-    <div class='cart-counter'>
-        {format_weight(total_weight)}
+with col2:
+    st.markdown("""
+    <div style='text-align: center; margin: 40px 0;'>
+        <h2 style='color: #2c3e50;'>Welcome to CrowdCargo</h2>
+        <p style='color: #666;'>Your Community Shipping Platform</p>
     </div>
     """, unsafe_allow_html=True)
 
-# Main title and description - only show on home page
-if page == "Home":
-    st.title("CrowdCargo - Community-Powered Ordering & Shipping Platform")
-    st.markdown("""
-    Welcome to CrowdCargo! This platform helps you order Indian products and share shipping costs with your community.
-    Place your order, and we'll aggregate it with others to reduce shipping costs for everyone.
-    """)
+# Add navigation button styles
+st.markdown("""
+<style>
+    /* Style for navigation buttons */
+    .stButton > button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .stButton > button:hover {
+        background-color: #45a049;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Navigation using Streamlit columns
+col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+
+with col1:
+    if st.button("Home", key="nav_home"):
+        st.session_state.page = "Home"
+        st.rerun()
+with col2:
+    if st.button("Place Order", key="nav_place_order"):
+        st.session_state.page = "Place Order"
+        st.rerun()
+with col3:
+    if st.button("My Cart", key="nav_cart"):
+        st.session_state.page = "My Cart"
+        st.rerun()
+with col4:
+    if st.button("Share Shipping", key="nav_share"):
+        st.session_state.page = "Share Shipping"
+        st.rerun()
+with col5:
+    if st.button("Checkout", key="nav_checkout"):
+        st.session_state.page = "Checkout"
+        st.rerun()
+with col6:
+    if st.button("Track Orders", key="nav_track"):
+        st.session_state.page = "Track Orders"
+        st.rerun()
+with col7:
+    if st.button("Shipping Status", key="nav_status"):
+        st.session_state.page = "Shipping Status"
+        st.rerun()
+
+# Add some spacing
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Main content based on selected page
-if page == "Home":
-    st.title("Welcome to CrowdCargo")
-    st.markdown("""
+if st.session_state.page == "Home":
+    
+    # Show welcome message and features for logged-in users
+    st.markdown(f"""
     <div style='text-align: center;'>
-        <h2 style='color: #2c3e50;'>Your Community Shipping Platform</h2>
-        <p style='font-size: 1.2em;'>Order Indian products and share shipping costs with your community</p>
+        <h2 style='color: #2c3e50;'>Welcome back, {st.session_state.user['name']}!</h2>
+        <p style='font-size: 1.2em;'>Ready to start ordering and sharing shipping costs?</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -751,7 +873,7 @@ if page == "Home":
                     </div>
                     """, unsafe_allow_html=True)
 
-elif page == "Place Order":
+elif st.session_state.page == "Place Order":
     st.title("Place Your Order")
     
     # Product Selection in 4x4 grid
@@ -791,8 +913,7 @@ elif page == "Place Order":
                         else:
                             st.warning("Please select a quantity greater than 0")
 
-# Add new My Cart page
-elif page == "My Cart":
+elif st.session_state.page == "My Cart":
     st.title("My Cart")
     
     if not st.session_state.cart:
@@ -842,7 +963,7 @@ elif page == "My Cart":
                     st.session_state.page = "Share Shipping"
                     st.rerun()
 
-elif page == "Share Shipping":
+elif st.session_state.page == "Share Shipping":
     st.title("Share Shipping")
     
     # Initialize session state
@@ -1021,7 +1142,7 @@ elif page == "Share Shipping":
                         st.session_state.selected_truck = truck['truck_id']
                         st.rerun()
 
-elif page == "Checkout":
+elif st.session_state.page == "Checkout":
     st.title("Checkout")
     
     # Get all pending orders for the user
@@ -1160,7 +1281,7 @@ elif page == "Checkout":
                     except Exception as e:
                         st.error(f"Failed to place order: {str(e)}")
 
-elif page == "Track Orders":
+elif st.session_state.page == "Track Orders":
     st.title("Track Your Orders")
     
     # Search section with tracking icon
@@ -1186,7 +1307,7 @@ elif page == "Track Orders":
         except Exception as e:
             st.error(f"Error retrieving order: {str(e)}")
 
-elif page == "Shipping Status":
+elif st.session_state.page == "Shipping Status":
     st.title("Shipping Status")
     
     # Active Shipping Plans with cards
@@ -1212,7 +1333,7 @@ elif page == "Shipping Status":
     except Exception as e:
         st.error(f"Error retrieving shipping plans: {str(e)}")
 
-elif page == "Admin Dashboard":
+elif st.session_state.page == "Admin Dashboard":
     if st.session_state.user.get('role') != 'admin':
         st.error("You don't have permission to access this page.")
         st.stop()
